@@ -2,7 +2,7 @@
 
 
  <!--   For each assignment there is corresponding PDF that has full description on what tasks need to be accomplished in that assignment.-->
- For each assignment the folder named "TMP" contains all the files which I modified/added to existing basic code structure for XINU OS to accomplish the particular task. The original XINU configuration provided is also included as a TGZ file.
+ For each assignment the folder named "TMP" contains all the files which I modified/added to existing basic code structure for XINU OS to accomplish the particular task. The original XINU configuration provided for each assignment is also included as a TGZ file.
 
 PA0 - Basic kernel programming practice on XINU OS.
 

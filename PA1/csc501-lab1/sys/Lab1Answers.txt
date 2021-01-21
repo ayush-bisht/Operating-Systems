@@ -1,0 +1,34 @@
+
+1. What are the advantages and disadvantages of each of the two scheduling policies? Also, give the advantages and disadvantages of the round robin scheduling policy originally implemented in Xinu.
+Ans. a) Random Scheduler
+
+Advantages - 1. The probability of a ready process to run depends on the priority of a process. Thus a higher priority process will run more number of times than a low priority process.
+2. Also, a random number is being used to determine which process should run next, lower priority processes also get a chance to run if the random number generated is greater than the priority of the high priority processes. This way, lower priority processes are not starved forever.
+
+Disadvantages - 1. As discussed above, a Higher priority processe will be switched out if the random number generated is greater than its priority. This is not desirable if the higher priority process is doing some time critical work.
+2. Since, a random number is being used to determine which procees actually run, the scheduling process is not deterministic.
+
+b) Linux like Scheduler
+
+Advantages - 1. The processes are scheduled according to their goodness which not only takes into account, the priority of a process but also the remaining quantum for a given process. This means if in anepoch session, a given process was not able to utilize its entire epoch, it will have a higher chance of running since it didn't use its quantum.  Thus, this scheduling approach take both static(the process priority) and dynamic(previous cycle remaining quantum) quantities into account while scheduling processes.
+
+2. Since each process can only run a fixed quantum in a given epoch, low priority processes also get a chance to run in every epoch, thus avoiding starvation.
+
+Disadvantages - 1. A low priority procees which never uses its entire quantum in an epoch session keeps on increasing it's goodness as time goes on (it keeps on adding to its previous quantum). In a given epoch it might have goodness higher than the goodness of higher priority processes. It will thus get a chance to run before the high priority process, which may not be desirable if the higer priority processes have to perform some time critcal tasks.
+
+2. Complex to implement
+
+c) Xinu Scheduler 
+Advantages - 1. Higher priority processes will always run when they become ready. This is desirable since processes with a high priority usually have to perform very important tasks
+Disadvantages - 1. Lower priority processes may get starved forever, if there is always a higher priority task ready for execution.
+
+
+2. Describe when each of the schedulers run the NULL process.
+Ans. a) Random Scheduler - NULL process will be run when there are no other processes in the ready queue. This condition is checked in 2 ways. If the current process is NULL process and there are no other processes in the ready queue, keep running null process. Or, if the current process is a process other than NULL process but its pstate is not PRCURR (it has either finished or is in the waiting state) and there are no other processes in the ready queue other than the NULL process, run the NULL process (In my implemetation this is being checked by calculating the sum of the priorities of all the ready processes(including the current process), if this sum is 0, then only the NULL process is ready and will therefore run.
+     
+b) Linux like Scheduler - NULL process will again run when there are no other ready processes. In each reschedule call, the total quantum left is being calculated(to determine if an epoch session is going on or do we have to start a new epoch session), by taking the  sum of counters of all the runnable processes in the OS. If that comes out to be zero, then either we have to start a new epoch session, or there are no other processes other than the NULL process. In the later case, the maximum goodness of all the ready processes will come out to be 0. This is only possible is the NULL process is the only runnable process and will thus run. The NULL, process however, gets preempted immediaitely since the preempt value is being set equal to the counter value of the process (for NULL processes this is always 0). If there are still no other ready processes, the same sequence will go on indefinitely.
+
+c) Xinu Scheduler - Since, this scheduler schedules processes on the basis of their priorities. The NULL process will run is there are no other ready processes in the OS, since NULL process has the lowest priority of 0.
+
+3. Assume that there are three processes P1, P2, P3 that will run forever without blocking. We want to allocate the following CPU times to each of them: 20% to P1, 30% to P2, and 50% to P3. Which priorities do we need to set to P1, P2, and P3 to accomplish this if we want to use the Random scheduler? Assume that those processes are the only ones running in the machine. Could you give a generalization of your result to n processes? Explain.
+Ans. P1, P2, P3 should have priorities in the ratio 2:3:5 if we want to allocate them 20%, 30% and 50% of the CPU time respectively. For eg. if we assign prioritiy 20 to P1, 30 to P2 and 50 to P3 then they will be allocated the required CPU times. If the random number generated is in range[0,49], then P3 will run, if the number is in the range [50,79], P2 will run and for random number in range[80,99], P1 will run. If the random number generated are truly random, then over long period of time, P3 on average will run for 50% of CPU time, P2 will run 30% and P1 will run 20% of the CPU time. It there are n processes p1, p2,...., pn which have to be allocated t1/T, t2/T..... tn/T execution time respectiely (where T is the total time CPU time available) then we just have to make sure that the priorities assigned to the processes p1, p2,...., pn are in the ration t1:t2:...:tn. We can simply achieve this by assiging a priority of ti/T to a process pi. 

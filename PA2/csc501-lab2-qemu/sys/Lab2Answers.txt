@@ -1,0 +1,67 @@
+1.The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lower-priority process.
+
+1. Priority inheritance is one approach to address this issue. Please give another approach and briefly describe its idea.
+Ans. Another approach to address the issue of priority inversion is priority ceiling.In this protocol each resource is assigned a priority ceiling, which is a priority equal to the highest priority of any task which may lock the resource. The protocol temporarily raises the priority of the tasks which holds the resource if required. There are two versions of this protocol Original Ceiling Priority Protocol(OCPP) and Immediate Ceiling Priority Protocol (ICPP). 
+a) In OCPP, a task X's priority is raised when a higher-priority task Y tries to acquire a resource that X has locked. The task's priority is then raised to the priority ceiling of the resource, ensuring that task X quickly finishes its critical section, unlocking the resource. A task is only allowed to lock a resource if its dynamic priority is higher than the priority ceilings of all resources locked byother tasks. Otherwise the task becomes blocked, waiting for the resource.
+b) In ICPP, a task's priority is immediately raised when it locks a resource. The task's priority is set to the priority ceiling of the resource, thus no task that may lock the resource is able to get scheduled.  
+
+Reference:- https://en.wikipedia.org/wiki/Priority_ceiling_protocol
+
+2. Design a test case to show that your approach can address the priority inversion problem. You should compare the results that derived from the original XINU implementation (use semaphore) and that derived from your implementation (use readers/writer locks). Put your results in Lab2Answers.txt and your test case program (name it task1.c) in both ./sys and ./TMP
+Ans. Consider 3 processes A, B and C such that their priorities are in the order Prio A < Prio B < Prio C. Process A acquires a lock and then goes to sleep for 2s while holding the lock. Process B is run after processes A and just prints out char 'B' 50 times and goes to sleep for 2s. Process C starts next and wants to acquire the lock which is currently being held by process A. Process thus enters the waiting state. At time moment of time, both process A and B are runnable. This is where the XINU semaphore and reader/writer lock implementation differs. 
+
+In XINU semaphore implemenation, process B will complete its execution first as its priority is higher than process A. Process C has can not implement even though it has a higher priority than B as it is waiting for the lock held by A(priority inversion problem). After the completion of process B, process A will run untill the completion of its critical section,  then it releases the lock. Once process A releases the lock, process C will begin and complete its execution as it has higher priority than process A. Once C has finished its execution, process A will finish its remaining execution.
+
+In reader/writer lock implementaion, process A will inherit the priority of process C untill it has implemented its critical section and released the lock. Thus process A will be scheduled before process B as its inherited priority is greater than the priority of process B. After A finishes its critical section execution, it will release the lock. Process C can then acquire the lock, and will be scheduled next. Once it has finished, process B will be scheduled before process A as the priority of process A has been reverted back to its original priority  which is less than the priority of process B. After B, process A will resume and finish its remaining execution.
+
+XINU SEMAPHORE IMPLEMENTATION RESULT:
+
+Testing priority inversion problem with existing XINU semaphore
+process A: to acquire sem with sem id: 92
+process A: acquired sem with sem id: 92
+process A: Going to sleep while holding the sem for 2s
+process B: starting
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+process B: going to sleep 2
+process C: to acquire sem with sem id: 92
+process B: resuming
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+process B: ending
+process A: resuming
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+process A: to release sem with sem id: 
+process C: acquired lock with lock id: 92
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+process C: to release lock with lock id: 
+returning to procces A after the sem was released to do the remaining work
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+
+READER/WRITER LOCK IMPLEMENTATION RESULT:
+
+Testing priority inversion problem with reader/writer lock system
+process A: to acquire lock with lock id: 49
+process A: acquired lock with lock id: 49
+process A: Going to sleep while holding the lock for 2s
+process B: starting
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+process B: going to sleep 2
+process C: to acquire lock with lock id: 49
+process A: resuming
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+process A: to release lock with lock id: 
+process C: acquired lock with lock id: 49
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+process C: to release lock with lock id: 
+process B: resuming
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+process B: ending
+returning to procces A after the lock was released to do the remaining work
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+
+
+2. Synchronization is a quite complex issue in operating systems. To show your understanding about process synchronization, you are asked to point out a potential problem in this pesudo-code: task2_sync_issue.c. Multiple reader processes can execute this code concurrently by calling reader(). You are asked to describe an issue it may cause and why it can happen. Put your answer in Lab2Answers.txt mentioned above.
+Ans. Since, XINU semaphores are being used for synchronization, the following issues can occur:
+1. Priority inversion - Consider a scenario, when a higher priority reader wants to acquire the lock which has been already acquired by a low priority writer process. The higher priority process will not be scheduled untill the low priority writer process has not finished its critical section implementaion. Thus, we wont be able to achieve real time priority scheduling.
+2. Starvation of writer - Multiple reader processes can execute this code concurrently. The presence of a large number of reader processes, can lead to a scenario, when there is always atleast one reader process which is holding the char buffer. In this case, a writer process will be starved as it will never get a chance to run.  

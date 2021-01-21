@@ -1,0 +1,75 @@
+Q1. Assuming the XINU text begins at address 0x0, draw a rough diagram of XINU’s memory layout with addresses derived from your experimental measurements. Include the information you uncovered from running your version of printsegaddress() and printprocstks().
+
+Ans1. Given below is the diagram of XINU's memory layout from the information discovered from printsegaddress() and printprocstks(). 
+
+------------------------------------    Top of the memory
+free
+  ---------------------------------- base -> 0x00fffffc
+prnull
+len(0)			------------ stack pointer -> 0x00ffff0c
+  ---------------------------------- limit -> 0x00fff000 
+
+  ---------------------------------- base -> 0x00ffeff8
+main 
+len(4096B)		------------ stack pointer -> 0x00ffef90
+  ---------------------------------- limit -> 0x00ffdffc
+
+
+heap
+------------------------------------	_end	0x000261b8
+bss
+------------------------------------	edata	0x0002053d
+data
+------------------------------------	etext	0x0001b229
+text
+------------------------------------	0
+
+Q2. What is the difference in stack top address before and after calling printtos() ? Draw a diagram to illustrate what are the contents of the items pushed into the stack between these two time points.
+
+Ans2. The top of the stack before the funtion call: 0x00ffefc0
+The top of the stack after the function call: 0x00ffefb8
+
+There is a difference of 0x8 in the top of the stack before and after the function call. This is because, the old instruction pointer (return address of main) and the old stack base pointer(base pointer of main) are pushed on top of the stack when the function call is made.
+
+------------------------------  ----> top of stack before the function call: 0x00ffefc0
+Old instruction pointer, EIP
+(return address of main)
+------------------------------
+Old base pointer,EBP
+(base pointer of main)
+------------------------------	----> top of stack after the function call: 0x00ffefb8	
+
+
+Q3. Which byte order is adopted in the host machine that we are using ? How did you find out ?
+
+ANs3. XINU uses Little Endian. 
+The command "lscpu" is used to find out the endianess of a machine.
+
+
+Q4. Briefly describe the mov, push, pusha, pop, and popa instructions in the x86. 
+
+Ans4. mov: mov instruction is used to copy the data from its first operand to its second operand.
+           syntax: mov src, dest
+           first operand i.e. source can be an immediate value, a register, a memory address.
+           second operand i.e. destination can be a register or a memory address but not a constant.
+
+push: push instrucion is used to push the operand on top of the stack. The top of the stack, i.e. esp is decremented by 4 then the operand is placed on the stack at the location pointed by
+esp.
+        syntax: push operand  (operand can be a consant - $4 or a register - %eax)
+
+pusha: pusha instruction pushes the contents of all 16-bit general purspose registers onto the stack. pusha(push all) instruciton is used when the operand size attribute is 16. The registers are stored on the stack in the following order: AX, CX, DX, BX, SP(originalvalue), BP, SI, DI.
+        syntax: pusha
+
+
+pop: pop instruction is used to remove the data form the top of the stack into a specifed destination, given by the operand. The first 4 bytes located at the stack pointer i.e. esp are move
+d to the operand, then esp is incremented by 4.
+        syntax: pop dest
+	the destination can be a register or a memory address.
+
+popa: popa instruction is used to pop all the 16 bit general purspose registers. The registers are popped in the following order: DI, SI, BP, SP, BX, DX, CX, AX.
+	syntax: popa
+
+
+Q5. In a stack frame, local variables are stored below the top of the stack. In task 3, does your result show all the local variables declared in your printtos function? If not, can you explain that? (hint: try to disable the compiler optimization by specifying -O in your Makefile)
+
+Ans. Since in the original code we are using -O0, we are using no optimization, the result does show all the local variables declared in the printtos funtion. We can change the optimization level, in which case some of the local variables are stored in the regiters, and not on the stack  to optimize the code. In such a case, all the local variables will not be pushed onto the stack.
